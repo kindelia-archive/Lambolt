@@ -1,7 +1,7 @@
-LamBolt
+Lambolt
 =======
 
-LamBolt is the ultimate compile target for functional languages. It is a minimal
+Lambolt is the ultimate compile target for functional languages. It is a minimal
 core that consists of, essentially, the untyped λ-calculus, plus constructors,
 pattern-matching and machine integers. It compiles to an optimal, massively
 parallel runtime, LamCrusher.
@@ -9,14 +9,14 @@ parallel runtime, LamCrusher.
 Usage
 -----
 
-We will soon add an interpreter. For now, you can run LamBolt by compiling it to
+We will soon add an interpreter. For now, you can run Lambolt by compiling it to
 LamCrusher. Check its repository for instructions.
 
 Examples
 --------
 
 Despite being a low-level target that isn't meant to be written directly,
-LamBolt does include a fairly readable syntax. Below are some examples:
+Lambolt does include a fairly readable syntax. Below are some examples:
 
 ### Constructors and functions:
 
