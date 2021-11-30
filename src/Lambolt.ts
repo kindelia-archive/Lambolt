@@ -147,7 +147,7 @@ export function show_term(term: Term): string {
       let oper = show_oper(term.oper);
       let val0 = show_term(term.val0);
       let val1 = show_term(term.val1);
-      return "{" + val0 + " " + oper + " " + val1 + ")";
+      return "{" + val0 + " " + oper + " " + val1 + "}";
     }
   }
 }
@@ -242,14 +242,10 @@ export function parse_u32() : P.Parser<Term | null> {
 export function parse_op2() : P.Parser<Term | null> {
   return (state) => P.guard(P.match("{"), (state) => {
     var [state, skp0] = P.match("{")(state);
+    var [state, val0] = parse_term()(state);
     var [state, oper] = parse_oper()(state);
-    if (oper !== null) {
-      var [state, val0] = parse_term()(state);
-      var [state, val1] = parse_term()(state);
-      return [state, Op2(oper, val0, val1)];
-    } else {
-      return [state, null];
-    }
+    var [state, val1] = parse_term()(state);
+    return [state, Op2(oper || "ADD", val0, val1)];
   })(state);
 }
 
