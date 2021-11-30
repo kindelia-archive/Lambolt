@@ -16,7 +16,6 @@ export type Term
   | {$: "Ctr", name: string, args: Array<Term>}
   | {$: "U32", numb: number}
   | {$: "Op2", oper: Oper, val0: Term, val1: Term}
-  | {$: "Cmp", val0: Term, val1: Term, iflt: Term, ifeq: Term, ifgt: Term}
 
 export type Oper
   = "ADD"
@@ -76,10 +75,6 @@ export function U32(numb: number) : Term {
 
 export function Op2(oper: Oper, val0: Term, val1: Term) : Term {
   return {$: "Op2", oper, val0, val1};
-}
-
-export function Cmp(val0: Term, val1: Term, iflt: Term, ifeq: Term, ifgt: Term) : Term {
-  return {$: "Cmp", val0, val1, iflt, ifeq, ifgt};
 }
 
 // Rule
@@ -152,15 +147,7 @@ export function show_term(term: Term): string {
       let oper = show_oper(term.oper);
       let val0 = show_term(term.val0);
       let val1 = show_term(term.val1);
-      return "(" + oper + " " + val0 + " " + val1 + ")";
-    }
-    case "Cmp": {
-      let val0 = show_term(term.val0);
-      let val1 = show_term(term.val1);
-      let iflt = show_term(term.iflt);
-      let ifeq = show_term(term.ifeq);
-      let ifgt = show_term(term.ifgt);
-      return "cmp " + val0 + " " + val1 + " { " + iflt + " " + ifeq + " " + ifgt + " }";
+      return "{" + val0 + " " + oper + " " + val1 + ")";
     }
   }
 }
@@ -266,20 +253,6 @@ export function parse_op2() : P.Parser<Term | null> {
   })(state);
 }
 
-export function parse_cmp() : P.Parser<Term | null> {
-  return (state) => P.guard(P.match("cmp "), (state) => {
-    var [state, skp0] = P.match("cmp ")(state);
-    var [state, val0] = parse_term()(state);
-    var [state, val1] = parse_term()(state);
-    var [state, skp1] = P.match("{")(state);
-    var [state, iflt] = parse_term()(state);
-    var [state, ifeq] = parse_term()(state);
-    var [state, ifgt] = parse_term()(state);
-    var [state, skp2] = P.match("}")(state);
-    return [state, Cmp(val0, val1, iflt, ifeq, ifgt)];
-  })(state);
-}
-
 export function parse_var() : P.Parser<Term | null> {
   return (state) => {
     var [state, name] = P.name(state);
@@ -300,7 +273,6 @@ export function parse_term() : P.Parser<Term> {
     parse_ctr(),
     parse_u32(),
     parse_op2(),
-    parse_cmp(),
     parse_var(),
     (state) => {
       return [state, null];
