@@ -245,6 +245,7 @@ export function parse_op2() : P.Parser<Term | null> {
     var [state, val0] = parse_term()(state);
     var [state, oper] = parse_oper()(state);
     var [state, val1] = parse_term()(state);
+    var [state, skp1] = P.match("}")(state);
     return [state, Op2(oper || "ADD", val0, val1)];
   })(state);
 }
