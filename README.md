@@ -21,39 +21,24 @@ Lambolt does include a fairly readable syntax. Below are some examples:
 ### Constructors and functions:
 
 ```javascript
-// Defines new constructors
-type Nat {
-  zero{}
-  succ{pred}
-}
-
-// A recursive function
-bond double(n) {
-  case n {
-    zero{}:
-      zero{}
-    succ{pred}:
-      succ{succ{double(pred)}}
-  }
-}
+// Doubles a natural number
+(double (zero))   = (zero)
+(double (succ x)) = (succ (succ (double x)))
 
 // Computes 2 * 2
-bond main() {
-  double(succ{succ{zero{}}})
-}
+(main) = (double (succ (succ (succ (zero)))))
 ```
 
 ### Lambda encodings:
 
 ```javascript
-// Computes 2 * 2 using Church Encoding
-bond main() {
+// Doubles using Church-Encoding
+(main) =
   let zero = λs λz z
-  let succ = λn λs λz (s (n s z))
-  let mul2 = λa (a λp (succ (succ p)) zero)
-  let num2 = λsucc λzero (succ (succ zero))
-  (mul2 num2)
-}
+  let succ = λn λs λz [s [n s z]]
+  let mul2 = λa [a λp [succ [succ p]] zero]
+  let num2 = λsucc λzero [succ [succ zero]]
+  [mul2 num2]
 ```
 
 
