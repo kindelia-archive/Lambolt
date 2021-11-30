@@ -281,35 +281,36 @@ export function parse_oper() : P.Parser<Oper | null> {
   return P.grammar("Oper", [
     (state) => {
       var [state, done] = P.match("+")(state);
-      return [state, "ADD"];
+      return [state, done ? "ADD" : null];
     },
     (state) => {
+      console.log("b");
       var [state, done] = P.match("-")(state);
-      return [state, "SUB"];
+      return [state, done ? "SUB" : null];
     },
     (state) => {
       var [state, done] = P.match("*")(state);
-      return [state, "MUL"];
+      return [state, done ? "MUL" : null];
     },
     (state) => {
       var [state, done] = P.match("/")(state);
-      return [state, "DIV"];
+      return [state, done ? "DIV" : null];
     },
     (state) => {
       var [state, done] = P.match("%")(state);
-      return [state, "MOD"];
+      return [state, done ? "MOD" : null];
     },
     (state) => {
       var [state, done] = P.match("&")(state);
-      return [state, "AND"];
+      return [state, done ? "AND" : null];
     },
     (state) => {
       var [state, done] = P.match("|")(state);
-      return [state, "OR"];
+      return [state, done ? "OR" : null];
     },
     (state) => {
       var [state, done] = P.match("^")(state);
-      return [state, "XOR"];
+      return [state, done ? "XOR" : null];
     },
   ]);
 }
