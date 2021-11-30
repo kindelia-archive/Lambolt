@@ -26,6 +26,14 @@ export type Oper
   | "AND"
   | "OR"
   | "XOR"
+  | "SHL"
+  | "SHR"
+  | "LTN"
+  | "LTE"
+  | "EQL"
+  | "GTE"
+  | "GTN"
+  | "NEQ"
 
 // Rule
 // ----
@@ -100,6 +108,14 @@ export function show_oper(oper: Oper): string {
     case "AND": return "&";
     case "OR" : return "|";
     case "XOR": return "^";
+    case "SHL": return "<<";
+    case "SHR": return ">>";
+    case "LTN": return "<";
+    case "LTE": return "<=";
+    case "EQL": return "==";
+    case "GTE": return ">=";
+    case "GTN": return ">";
+    case "NEQ": return "!=";
   }
 }
 
