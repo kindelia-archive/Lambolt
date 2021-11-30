@@ -327,6 +327,38 @@ export function parse_oper() : P.Parser<Oper | null> {
       var [state, done] = P.match("^")(state);
       return [state, done ? "XOR" : null];
     },
+    (state) => {
+      var [state, done] = P.match("<<")(state);
+      return [state, done ? "SHL" : null];
+    },
+    (state) => {
+      var [state, done] = P.match(">>")(state);
+      return [state, done ? "SHR" : null];
+    },
+    (state) => {
+      var [state, done] = P.match("<")(state);
+      return [state, done ? "LTN" : null];
+    },
+    (state) => {
+      var [state, done] = P.match("<=")(state);
+      return [state, done ? "LTE" : null];
+    },
+    (state) => {
+      var [state, done] = P.match("==")(state);
+      return [state, done ? "EQL" : null];
+    },
+    (state) => {
+      var [state, done] = P.match(">=")(state);
+      return [state, done ? "GTE" : null];
+    },
+    (state) => {
+      var [state, done] = P.match(">")(state);
+      return [state, done ? "GTN" : null];
+    },
+    (state) => {
+      var [state, done] = P.match("!=")(state);
+      return [state, done ? "NEQ" : null];
+    },
   ]);
 }
 
