@@ -2,15 +2,13 @@ Lambolt
 =======
 
 Lambolt is the ultimate compile target for functional languages. It is a minimal
-core that consists of, essentially, the untyped λ-calculus, plus constructors,
-pattern-matching and machine integers. It compiles to an optimal, massively
-parallel runtime, LamCrusher.
+core that consists of, essentially, lambdas, machine integers and rewrite rules.
+It compiles to an optimal, massively parallel runtime, [LamRT](https://github.com/Kindelia/LamRT).
 
 Usage
 -----
 
-We will soon add an interpreter. For now, you can run Lambolt by compiling it to
-LamCrusher. Check its repository for instructions.
+We will soon add an interpreter. For now, you can run Lambolt via LamRT.
 
 Examples
 --------
