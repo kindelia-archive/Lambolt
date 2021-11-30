@@ -284,7 +284,6 @@ export function parse_oper() : P.Parser<Oper | null> {
       return [state, done ? "ADD" : null];
     },
     (state) => {
-      console.log("b");
       var [state, done] = P.match("-")(state);
       return [state, done ? "SUB" : null];
     },
