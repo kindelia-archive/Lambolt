@@ -14,6 +14,19 @@ export type Term
   | {$: "Lam", name: string, body: Term}
   | {$: "App", func: Term, argm: Term}
   | {$: "Ctr", name: string, args: Array<Term>}
+  | {$: "U32", numb: number}
+  | {$: "Op2", oper: Oper, val0: Term, val1: Term}
+  | {$: "Cmp", val0: Term, val1: Term, iflt: Term, ifeq: Term, ifgt: Term}
+
+export type Oper
+  = "ADD"
+  | "SUB"
+  | "MUL"
+  | "DIV"
+  | "MOD"
+  | "AND"
+  | "OR"
+  | "XOR"
 
 // Rule
 // ----
@@ -57,6 +70,18 @@ export function Ctr(name: string, args: Array<Term>) : Term {
   return {$: "Ctr", name, args};
 }
 
+export function U32(numb: number) : Term {
+  return {$: "U32", numb};
+}
+
+export function Op2(oper: Oper, val0: Term, val1: Term) : Term {
+  return {$: "Op2", oper, val0, val1};
+}
+
+export function Cmp(val0: Term, val1: Term, iflt: Term, ifeq: Term, ifgt: Term) : Term {
+  return {$: "Cmp", val0, val1, iflt, ifeq, ifgt};
+}
+
 // Rule
 // ----
 
@@ -69,6 +94,19 @@ export function Rule(lhs: Term, rhs: Term) : Rule {
 
 // Term
 // ----
+
+export function show_oper(oper: Oper): string {
+  switch (oper) {
+    case "ADD": return "+";
+    case "SUB": return "-";
+    case "MUL": return "*";
+    case "DIV": return "/";
+    case "MOD": return "%";
+    case "AND": return "&";
+    case "OR" : return "|";
+    case "XOR": return "^";
+  }
+}
 
 export function show_term(term: Term): string {
   switch (term.$) {
@@ -106,6 +144,23 @@ export function show_term(term: Term): string {
       let name = term.name;
       let args = term.args.map(show_term);
       return "(" + name + args.map(x => " " + x).join("") + ")";
+    }
+    case "U32": {
+      return "#" + term.numb.toString();
+    }
+    case "Op2": {
+      let oper = show_oper(term.oper);
+      let val0 = show_term(term.val0);
+      let val1 = show_term(term.val1);
+      return "(" + oper + " " + val0 + " " + val1 + ")";
+    }
+    case "Cmp": {
+      let val0 = show_term(term.val0);
+      let val1 = show_term(term.val1);
+      let iflt = show_term(term.iflt);
+      let ifeq = show_term(term.ifeq);
+      let ifgt = show_term(term.ifgt);
+      return "cmp " + val0 + " " + val1 + " { " + iflt + " " + ifeq + " " + ifgt + " }";
     }
   }
 }
@@ -185,6 +240,46 @@ export function parse_ctr() : P.Parser<Term | null> {
   })(state);
 }
 
+export function parse_u32() : P.Parser<Term | null> {
+  return (state) => P.guard(P.match("#"), (state) => {
+    var [state, skp0] = P.match("#")(state);
+    var [state, numb] = P.name1(state);
+    if (numb !== null) {
+      return [state, U32(Number(numb))];
+    } else {
+      return [state, null];
+    }
+  })(state);
+}
+
+export function parse_op2() : P.Parser<Term | null> {
+  return (state) => P.guard(P.match("{"), (state) => {
+    var [state, skp0] = P.match("{")(state);
+    var [state, oper] = parse_oper()(state);
+    if (oper !== null) {
+      var [state, val0] = parse_term()(state);
+      var [state, val1] = parse_term()(state);
+      return [state, Op2(oper, val0, val1)];
+    } else {
+      return [state, null];
+    }
+  })(state);
+}
+
+export function parse_cmp() : P.Parser<Term | null> {
+  return (state) => P.guard(P.match("cmp "), (state) => {
+    var [state, skp0] = P.match("cmp ")(state);
+    var [state, val0] = parse_term()(state);
+    var [state, val1] = parse_term()(state);
+    var [state, skp1] = P.match("{")(state);
+    var [state, iflt] = parse_term()(state);
+    var [state, ifeq] = parse_term()(state);
+    var [state, ifgt] = parse_term()(state);
+    var [state, skp2] = P.match("}")(state);
+    return [state, Cmp(val0, val1, iflt, ifeq, ifgt)];
+  })(state);
+}
+
 export function parse_var() : P.Parser<Term | null> {
   return (state) => {
     var [state, name] = P.name(state);
@@ -203,10 +298,50 @@ export function parse_term() : P.Parser<Term> {
     parse_lam(),
     parse_app(),
     parse_ctr(),
+    parse_u32(),
+    parse_op2(),
+    parse_cmp(),
     parse_var(),
     (state) => {
       return [state, null];
     }
+  ]);
+}
+
+export function parse_oper() : P.Parser<Oper | null> {
+  return P.grammar("Oper", [
+    (state) => {
+      var [state, done] = P.match("+")(state);
+      return [state, "ADD"];
+    },
+    (state) => {
+      var [state, done] = P.match("-")(state);
+      return [state, "SUB"];
+    },
+    (state) => {
+      var [state, done] = P.match("*")(state);
+      return [state, "MUL"];
+    },
+    (state) => {
+      var [state, done] = P.match("/")(state);
+      return [state, "DIV"];
+    },
+    (state) => {
+      var [state, done] = P.match("%")(state);
+      return [state, "MOD"];
+    },
+    (state) => {
+      var [state, done] = P.match("&")(state);
+      return [state, "AND"];
+    },
+    (state) => {
+      var [state, done] = P.match("|")(state);
+      return [state, "OR"];
+    },
+    (state) => {
+      var [state, done] = P.match("^")(state);
+      return [state, "XOR"];
+    },
   ]);
 }
 
