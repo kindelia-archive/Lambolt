@@ -20,11 +20,11 @@ Lambolt does include a fairly readable syntax. Below are some examples:
 
 ```javascript
 // Doubles a natural number
-(double (zero))   = (zero)
-(double (succ x)) = (succ (succ (double x)))
+(Double (Zero))   = (Zero)
+(Double (Ducc x)) = (Succ (Succ (Double x)))
 
 // Computes 2 * 2
-(main) = (double (succ (succ (succ (zero)))))
+(Main) = (Double (Succ (Succ (Succ (Zero)))))
 ```
 
 ### Lambda encodings:
@@ -33,12 +33,8 @@ Lambolt does include a fairly readable syntax. Below are some examples:
 // Doubles using Church-Encoding
 (main) =
   let zero = λs λz z
-  let succ = λn λs λz [s [n s z]]
-  let mul2 = λa [a λp [succ [succ p]] zero]
-  let num2 = λsucc λzero [succ [succ zero]]
-  [mul2 num2]
+  let succ = λn λs λz (s (n s z))
+  let mul2 = λa (a λp (succ (succ p)) zero)
+  let num2 = λsucc λzero (succ (succ zero))
+  (mul2 num2)
 ```
-
-
-
-
