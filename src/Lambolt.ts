@@ -295,7 +295,7 @@ export function parse_var() : P.Parser<Term | null> {
   return (state) => P.guard(
     (state) => {
       var [state, head] = P.get_char()(state);
-      return [state, head !== null && /[a-zA-Z_]/.test(head)];
+      return [state, head !== null && /[a-z_]/.test(head)];
     },
     (state) => {
       var [state, name] = P.name(state);
