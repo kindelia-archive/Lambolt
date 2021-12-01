@@ -149,7 +149,7 @@ export function show_term(term: Term): string {
         term = term.func;
       }
       let func = show_term(term);
-      return "[" + func + " " + args.reverse().join(" ") + "]";
+      return "(" + func + " " + args.reverse().join(" ") + ")";
     }
     case "Ctr": {
       let name = term.name;
@@ -157,13 +157,13 @@ export function show_term(term: Term): string {
       return "(" + name + args.map(x => " " + x).join("") + ")";
     }
     case "U32": {
-      return "#" + term.numb.toString();
+      return term.numb.toString();
     }
     case "Op2": {
       let oper = show_oper(term.oper);
       let val0 = show_term(term.val0);
       let val1 = show_term(term.val1);
-      return "{" + val0 + " " + oper + " " + val1 + "}";
+      return "(" + oper + " " + val0 + " " + val1 + ")";
     }
   }
 }
@@ -225,56 +225,86 @@ export function parse_lam() : P.Parser<Term | null> {
 }
 
 export function parse_app() : P.Parser<Term | null> {
-  return (state) => P.guard(P.match("["), P.list(
-    P.match("["),
-    P.match(""),
-    P.match("]"),
-    parse_term(),
-    (args) => args.reduce((a,b) => App(a,b)),
-  ))(state);
+  return (state) => P.guard(
+    P.match("("),
+    P.list(
+      P.match("("),
+      P.match(""),
+      P.match(")"),
+      parse_term(),
+      (args) => {
+        if (args.length > 0) {
+          return args.reduce((a,b) => App(a,b));
+        } else {
+          throw P.expected_type("non-empty parenthesis")(state);
+        }
+      },
+    ))(state);
 }
 
 export function parse_ctr() : P.Parser<Term | null> {
-  return (state) => P.guard(P.match("("), (state) => {
-    var [state, skp0] = P.match("(")(state);
-    var [state, name] = P.name1(state);
-    var [state, args] = P.until(P.match(")"), parse_term())(state);
-    return [state, Ctr(name, args)];
-  })(state);
+  return (state) => P.guard(
+    (state) => {
+      var [state, open] = P.match("(")(state);
+      var [state, head] = P.get_char()(state);
+      return [state, open && head !== null && /[A-Z]/.test(head)];
+    },
+    (state) => {
+      var [state, skp0] = P.match("(")(state);
+      var [state, name] = P.name1(state);
+      var [state, args] = P.until(P.match(")"), parse_term())(state);
+      return [state, Ctr(name, args)];
+    })(state);
 }
 
 export function parse_u32() : P.Parser<Term | null> {
-  return (state) => P.guard(P.match("#"), (state) => {
-    var [state, skp0] = P.match("#")(state);
-    var [state, numb] = P.name1(state);
-    if (numb !== null) {
-      return [state, U32(Number(numb))];
-    } else {
-      return [state, null];
-    }
-  })(state);
+  return (state) => P.guard(
+    (state) => {
+      var [state, head] = P.get_char()(state);
+      return [state, head !== null && /[0-9]/.test(head)];
+    },
+    (state) => {
+      var [state, skp0] = P.match("#")(state);
+      var [state, numb] = P.name1(state);
+      if (numb !== null) {
+        return [state, U32(Number(numb))];
+      } else {
+        return [state, null];
+      }
+    })(state);
 }
 
 export function parse_op2() : P.Parser<Term | null> {
-  return (state) => P.guard(P.match("{"), (state) => {
-    var [state, skp0] = P.match("{")(state);
-    var [state, val0] = parse_term()(state);
-    var [state, oper] = parse_oper()(state);
-    var [state, val1] = parse_term()(state);
-    var [state, skp1] = P.match("}")(state);
-    return [state, Op2(oper || "ADD", val0, val1)];
-  })(state);
+  return (state) => P.guard(
+    (state) => {
+      var [state, open] = P.match("(")(state);
+      var [state, head] = P.get_char()(state);
+      return [state, open && head !== null && /[+\-*/%&|^<>=!]/.test(head)];
+    },
+    (state) => {
+      var [state, skp0] = P.match("(")(state);
+      var [state, oper] = parse_oper()(state);
+      var [state, val0] = parse_term()(state);
+      var [state, val1] = parse_term()(state);
+      var [state, skp1] = P.match(")")(state);
+      return [state, Op2(oper || "ADD", val0, val1)];
+    })(state);
 }
 
 export function parse_var() : P.Parser<Term | null> {
-  return (state) => {
-    var [state, name] = P.name(state);
-    if (name.length > 0) {
-      return [state, Var(name)];
-    } else {
-      return [state, null];
-    }
-  };
+  return (state) => P.guard(
+    (state) => {
+      var [state, head] = P.get_char()(state);
+      return [state, head !== null && /[a-zA-Z_]/.test(head)];
+    },
+    (state) => {
+      var [state, name] = P.name(state);
+      if (name.length > 0) {
+        return [state, Var(name)];
+      } else {
+        return [state, null];
+      }
+    })(state);
 }
 
 export function parse_term() : P.Parser<Term> {
@@ -282,10 +312,10 @@ export function parse_term() : P.Parser<Term> {
     parse_let(),
     parse_dup(),
     parse_lam(),
-    parse_app(),
     parse_ctr(),
-    parse_u32(),
     parse_op2(),
+    parse_app(),
+    parse_u32(),
     parse_var(),
     (state) => {
       return [state, null];
@@ -367,14 +397,10 @@ export function parse_oper() : P.Parser<Oper | null> {
 
 export function parse_rule() : P.Parser<Rule | null> {
   return (state) => {
-    try {
-      var [state, lhs] = parse_term()(state);
-      var [state, skp0] = P.consume("=")(state);
-      var [state, rhs] = parse_term()(state);
-      return [state, Rule(lhs, rhs)];
-    } catch (e) {
-      return [state, null];
-    }
+    var [state, lhs] = parse_term()(state);
+    var [state, skp0] = P.consume("=")(state);
+    var [state, rhs] = parse_term()(state);
+    return [state, Rule(lhs, rhs)];
   };
 }
 
@@ -383,16 +409,16 @@ export function parse_rule() : P.Parser<Rule | null> {
 
 export function parse_file() : P.Parser<File> {
   return (state) => {
+    var [state, done] = P.done(state);
+    if (done) {
+      return [state, []];
+    }
     var [state, rule] = parse_rule()(state);
     if (rule !== null) {
       var [state, file] = parse_file()(state);
       return [state, [rule].concat(file)];
     }
-    var [state, done] = P.done(state);
-    if (!done) {
-      P.expected_type("definition")(state);
-    }
-    return [state, []];
+    throw P.expected_type("definition")(state);
   };
 }
 

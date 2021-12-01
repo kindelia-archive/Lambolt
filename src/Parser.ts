@@ -7,6 +7,7 @@ export type Parser<A> = (state: State) => [State, A];
 // Monad
 // =====
 
+// Monadic binder
 export function bind<A,B>(a_parser: Parser<A>, b_parser: (a: A) => Parser<B>): Parser<B> {
   return (state) => {
     var [state, a_value] = a_parser(state);
@@ -14,6 +15,7 @@ export function bind<A,B>(a_parser: Parser<A>, b_parser: (a: A) => Parser<B>): P
   }
 }
 
+// Monadic return
 export function pure<A>(a: A): Parser<A> {
   return (state) => {
     return [state, a];
@@ -32,7 +34,6 @@ export function Parser<A,B>(fn: () => Generator<Parser<A>,B,A>) : Parser<B> {
     return pure(next.value)(state);
   }
 }
-
 export function* run<A>(a: any) {
   return (yield a) as A;
 }
@@ -40,10 +41,12 @@ export function* run<A>(a: any) {
 // Utils
 // =====
 
+// Returns the current state
 export const get_state : Parser<State> = (state) => {
   return [state, state];
 };
 
+// Applies a parser to some come
 export function read<A>(parser: () => Parser<A>, code: string): A {
   var [state, value] = parser()({code, index: 0});
   return value;
@@ -52,6 +55,7 @@ export function read<A>(parser: () => Parser<A>, code: string): A {
 // Skippers
 // ========
 
+// Skips "//..." comments
 export const skip_comment : Parser<boolean> = (state: State) => {
   var state = {...state};
   var skips = state.code.slice(state.index, state.index + 2) === "//";
@@ -64,6 +68,7 @@ export const skip_comment : Parser<boolean> = (state: State) => {
   return [state, skips];
 };
 
+// Skips whitespaces
 export const skip_spaces : Parser<boolean> = (state: State) => {
   var state = {...state};
   var skips = /\s/.test(state.code[state.index]);
@@ -73,6 +78,7 @@ export const skip_spaces : Parser<boolean> = (state: State) => {
   return [state, skips];
 };
 
+// Skips whitespaces and comments
 export const skip : Parser<boolean> = (state: State) => {
   var [state, comment] = skip_comment(state);
   var [state, spaces] = skip_spaces(state);
@@ -87,6 +93,9 @@ export const skip : Parser<boolean> = (state: State) => {
 // Strings
 // =======
 
+// Attempts to match a string right after the cursor.
+// If it matches, consume it and return true.
+// Otherwise, return false.
 export function match_here(str: string) : Parser<boolean> {
   return (state) => {
     if (state.code.slice(state.index, state.index + str.length) === str) {
@@ -97,6 +106,7 @@ export function match_here(str: string) : Parser<boolean> {
   };
 }
 
+// Like match, but skipping spaces and comments before.
 export function match(str: string) : Parser<boolean> {
   return (state) => {
     var [state, skipped] = skip(state);
@@ -104,6 +114,7 @@ export function match(str: string) : Parser<boolean> {
   };
 }
 
+// Forces consuming a string. If it fails, throws.
 export function consume(str: string) : Parser<null> {
   return (state) => {
     var [state, matched] = match(str)(state);
@@ -116,6 +127,19 @@ export function consume(str: string) : Parser<null> {
   };
 }
 
+// Consumes one character. Returns it.
+export function get_char(): Parser<string | null> {
+  return (state) => {
+    var [state, skipped] = skip(state);
+    if (state.index < state.code.length) {
+      return [{...state, index: state.index + 1}, state.code[state.index]];
+    } else {
+      return [state, null];
+    }
+  }
+}
+
+// Returns true if we are at the end of the file, skipping spaces and comments.
 export const done : Parser<boolean> = (state) => {
   var [state, skipped] = skip(state);
   return [state, state.index === state.code.length];
@@ -124,6 +148,8 @@ export const done : Parser<boolean> = (state) => {
 // Blocks
 // ======
 
+// Checks if a boolean parser returns true. If so, revert it and apply another
+// parser. This is usually used to select parsing variants.
 export function guard<A>(head: Parser<boolean>, body: Parser<A>) : Parser<A|null> {
   return (state) => {
     var [state, skipped] = skip(state);
@@ -136,6 +162,8 @@ export function guard<A>(head: Parser<boolean>, body: Parser<A>) : Parser<A|null
   };
 }
 
+// Attempts several `A | null` parsers, returning the first one that succeeds.
+// If no parser succeeds, throws.
 export function grammar<A>(name: string, choices: Array<Parser<A|null>>) : Parser<A> {
   return (state) => {
     for (var i = 0; i < choices.length; ++i) {
@@ -152,6 +180,7 @@ export function grammar<A>(name: string, choices: Array<Parser<A|null>>) : Parse
 // Combinators
 // ===========
 
+// Evaluates a parser and returns its result, but reverts its effect.
 export function dry<A>(parser: Parser<A>): Parser<A> {
   return (state) => {
     var [_, result] = parser(state);
@@ -159,6 +188,7 @@ export function dry<A>(parser: Parser<A>): Parser<A> {
   };
 }
 
+// Evaluates a parser until a condition is met. Returns an array of results.
 export function until<A>(delim: Parser<boolean>, parser: Parser<A>): Parser<Array<A>> {
   return (state) => {
     var [state, delimited] = delim(state);
@@ -172,6 +202,7 @@ export function until<A>(delim: Parser<boolean>, parser: Parser<A>): Parser<Arra
   };
 }
 
+// Evaluates a list-like parser, with an opener, separator, and closer.
 export function list<A,B>(
   open  : Parser<boolean>,
   sep   : Parser<boolean>,
@@ -220,6 +251,7 @@ export function call<A,B>(
 // Name
 // ====
 
+// Parses a name right after the parsing cursor.
 export const name_here : Parser<string> = (state) => {
   var state = {...state};
   var name = "";
@@ -230,11 +262,13 @@ export const name_here : Parser<string> = (state) => {
   return [state, name];
 }
 
+// Parses a name after skipping.
 export const name : Parser<string> = (state) => {
   var [state, skipped] = skip(state);
   return name_here(state);
 }
 
+// Parses a non-empty name after skipping.
 export const name1 : Parser<string> = (state) => {
   var [state, name1] = name(state);
   if (name1.length > 0) {
@@ -260,6 +294,7 @@ export function expected_type<A>(name: string): Parser<A> {
   }
 }
 
+// Pretty highligts a slice of the code, between two given indexes.
 export function highlight(from_index: number, to_index: number, code: string): string {
   var open = "«";
   var close = "»";
