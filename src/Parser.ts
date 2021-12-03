@@ -106,11 +106,29 @@ export function match_here(str: string) : Parser<boolean> {
   };
 }
 
+// Attempts to match a string right after the cursor.
+// If it matches, consume it and return true.
+// Otherwise, return false.
+export function match_here_regex(regex: RegExp) : Parser<boolean> {
+  return (state) => {
+    var matched = state.code.slice(state.index).match(regex);
+    if (matched && matched.index === 0) {
+      return [{...state, index: state.index + matched[0].length}, true];
+    } else {
+      return [state, false];
+    }
+  };
+}
+
 // Like match, but skipping spaces and comments before.
-export function match(str: string) : Parser<boolean> {
+export function match(matcher: string | RegExp) : Parser<boolean> {
   return (state) => {
     var [state, skipped] = skip(state);
-    return match_here(str)(state);
+    if (typeof matcher === "string") {
+      return match_here(matcher)(state);
+    } else {
+      return match_here_regex(matcher)(state);
+    }
   };
 }
 
