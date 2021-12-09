@@ -421,3 +421,7 @@ export function parse_file() : P.Parser<File> {
     throw P.expected_type("definition")(state);
   };
 }
+
+export function read_file(code: string): File {
+  return P.read(parse_file, code);
+}
