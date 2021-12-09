@@ -247,7 +247,7 @@ export function parse_ctr() : P.Parser<Term | null> {
     (state) => {
       var [state, open] = P.match("(")(state);
       var [state, head] = P.get_char()(state);
-      return [state, open && head !== null && /[A-Z]/.test(head)];
+      return [state, open && head !== null && /[A-Z.]/.test(head)];
     },
     (state) => {
       var [state, skp0] = P.match("(")(state);
@@ -421,4 +421,3 @@ export function parse_file() : P.Parser<File> {
     throw P.expected_type("definition")(state);
   };
 }
-
